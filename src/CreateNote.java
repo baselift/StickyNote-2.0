@@ -1,10 +1,7 @@
 package src;
 
 import javax.swing.*;
-import javax.swing.undo.UndoManager;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -34,60 +31,11 @@ public class CreateNote extends JDialog {
                 source.setEnabled(true);
             }
         });
+        createGUI();
     }
 
-    protected void createGUI() {
+    private void createGUI() {
         final int VERTICAL_PADDING = 30;
-
-        JPanel textSettingsPanel = new JPanel();
-        textSettingsPanel.setLayout(new FlowLayout(FlowLayout.LEADING, 20, 0));
-        GridBagConstraints textSettingsC = new GridBagConstraints();
-        textSettingsC.gridy = 0;
-        textSettingsC.gridx = 0;
-        textSettingsC.insets = new Insets(VERTICAL_PADDING, 0, 0, 0);
-
-        // "Text:" label
-        JLabel textLbl = new JLabel("Text:");
-        textLbl.setFont(new Font("Arial", Font.BOLD, 16));
-
-        // text area and remaining char label panel
-        JPanel textBoxSubPanel = new JPanel();
-        textBoxSubPanel.setLayout(new BoxLayout(textBoxSubPanel, BoxLayout.Y_AXIS));
-
-        // text area
-        JTextArea textArea;
-        if (this.source instanceof StickyNote) {
-            textArea = new JTextArea(((StickyNote) this.source).getFullText(), 6, 30);
-        } else {
-            textArea = new JTextArea("This is what goes in your sticky note!", 6, 30);
-        }
-        textArea.setLineWrap(true);
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setMinimumSize(new Dimension(330, 96));
-
-        // remaining characters label
-        final int CHAR_LIMIT = 1000;
-        JLabel charCountLbl = new JLabel(CHAR_LIMIT - (textArea.getText().length()) + " characters remaining",
-                SwingConstants.RIGHT);
-        textArea.addKeyListener(new KeyAdapter() {
-            int length;
-            @Override
-            public void keyTyped(KeyEvent e) {
-                SwingUtilities.invokeLater(
-                        () -> {
-                            // length is how much characters currently in text box
-                            length = CommonUtils.collapseNewLine(textArea.getText()).length();
-                            charCountLbl.setText(CHAR_LIMIT - length + " characters remaining");
-                        });
-                // ignore any events when the character limit has been reached
-                if(length >= CHAR_LIMIT) {
-                    e.consume();
-                }
-            }
-        });
-        // attach action that will stop any clipboard pasting above the char limit
-        Action action = textArea.getActionMap().get("paste-from-clipboard");
-        textArea.getActionMap().put("paste-from-clipboard", new PasteOverflowAction(action, textArea, CHAR_LIMIT));
 
         JPanel colourSettingsPanel = new JPanel();
         colourSettingsPanel.setLayout(new FlowLayout(FlowLayout.LEADING, 36, 0));
@@ -153,31 +101,26 @@ public class CreateNote extends JDialog {
         userDecisionC.anchor = GridBagConstraints.FIRST_LINE_END;
 
         JButton confirmBttn = new JButton("Confirm");
+        confirmBttn.setFocusable(false);
         confirmBttn.addActionListener(e -> {
             if (e.getSource() == confirmBttn) {
                 if (this.source instanceof StickyNote) {
                     ((StickyNote) this.source).dispose();
                 }
                 SwingUtilities.invokeLater(() -> {
-                    StickyNote note = new StickyNote(textArea.getText(), selectedColour, selectedBackgroundColour);
+                    StickyNote note = new StickyNote(selectedColour, selectedBackgroundColour);
                     note.setVisible(true);
-                    note.createGUI();
                     close();
                 });
             }
         });
         JButton cancelBttn = new JButton("Cancel");
+        cancelBttn.setFocusable(false);
         cancelBttn.addActionListener(e -> {
             if (e.getSource() == cancelBttn) {
                 close();
             }
         });
-
-        textSettingsPanel.add(textLbl);
-        textBoxSubPanel.add(scrollPane);
-        textBoxSubPanel.add(charCountLbl);
-        textSettingsPanel.add(textBoxSubPanel);
-        super.add(textSettingsPanel, textSettingsC);
 
         colourSettingsPanel.add(colourLbl);
         colourSettingsPanel.add(chooseColour);

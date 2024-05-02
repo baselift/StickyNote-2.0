@@ -33,7 +33,6 @@ public class UserMenu extends JFrame {
                 SwingUtilities.invokeLater(() -> {
                     addNoteBttn.setEnabled(false);
                     CreateNote creator = new CreateNote(addNoteBttn);
-                    creator.createGUI();
                     creator.setVisible(true);
                 });
             }

@@ -1,38 +1,40 @@
 package src;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.View;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
 
 public class StickyNote extends JFrame implements Serializable {
-    private String text;
     private Color backgroundColour;
     private Color textColour;
-    private JPopupMenu menu;
+    private final Font defaultFont = new Font("Arial", Font.PLAIN, 18);
     private int stickyNoteX;
     private int stickyNoteY;
-    private final Font defaultFont = new Font("Arial", Font.PLAIN, 18);
-    private ArrayList<JTextArea> pageArray = new HashMap<>();
+    private JPanel textAreaDeck = null;
     private int pageNum = 0;
+    private final int ROWS = 18;
+    private final int COLUMNS = 28;
 
-    public StickyNote(String text, Color textColour, Color backgroundColour) {
+    public StickyNote(Color textColour, Color backgroundColour) {
         super();
         setMouseListeners();
-        super.setSize(new Dimension(300, 300));
         super.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         super.setUndecorated(true);
+        super.setLayout(new GridBagLayout());
+        super.getContentPane().setBackground(backgroundColour);
 
         Image icon = new ImageIcon("./images/stickynoteicon2.png").getImage();
         icon = icon.getScaledInstance(30, 30, Image.SCALE_SMOOTH);
         super.setIconImage(icon);
 
-        this.text = text;
         this.backgroundColour = backgroundColour;
         this.textColour = textColour;
+        createGUI();
     }
 
     private void setMouseListeners() {
@@ -56,7 +58,7 @@ public class StickyNote extends JFrame implements Serializable {
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     SwingUtilities.invokeLater(() -> {
-                        menu.show(StickyNote.this,
+                        createSettingPopup().show(StickyNote.this,
                                 e.getX(), e.getY());
                     });
 
@@ -68,73 +70,27 @@ public class StickyNote extends JFrame implements Serializable {
         });
     }
 
-    protected void createGUI() {
-        menu = new JPopupMenu();
-        StickyNoteBackground temp = new StickyNoteBackground(text, textColour, backgroundColour, defaultFont);
+    private JPopupMenu createSettingPopup() {
+        JPopupMenu menu = new JPopupMenu();
 
         JMenuItem settingsBttn = new JMenuItem("Settings");
         settingsBttn.addActionListener(e -> {
             CreateNote note = new CreateNote(this);
             note.setIcon(new ImageIcon("./images/settings icon.png"));
-            note.createGUI();
             note.setVisible(true);
         });
         menu.add(settingsBttn);
 
         JMenuItem nextPage = new JMenuItem("Next page");
         nextPage.addActionListener(e -> {
-            /*
-            Get the generated textPerLineList after rendering the temporary background since
-            we require a Graphics object in order to reliably distribute the text
-             */
-            ArrayList<String> textList = temp.getTextPerLineList();
-            int maxLines = StickyNoteBackground.linesPerNote;
-            boolean noteHasTemp;
-
-            // check if the temporary background is still there
-            if (pageMap.get(0) == temp) {
-                updatePageMap(maxLines, textList, textColour, backgroundColour, defaultFont);
-                noteHasTemp = true;
-            } else {
-                noteHasTemp = false;
-            }
-
-            if (pageNum + 1 >= pageMap.size()) {
-                return;
-            }
-
-            SwingUtilities.invokeLater(() -> {
-                super.remove(noteHasTemp ? temp : getPage(pageNum));
-                super.validate();
-                super.repaint();
-            });
-
-            SwingUtilities.invokeLater(() -> {
-                super.add(getPage(pageNum + 1));
-                pageNum += 1;
-                super.validate();
-                super.repaint();
-            });
+            nextPage(false);
         });
         menu.addSeparator();
         menu.add(nextPage);
 
         JMenuItem previousPage = new JMenuItem("Previous page");
         previousPage.addActionListener(e -> {
-            if (pageNum != 0) {
-                SwingUtilities.invokeLater(() -> {
-                    super.remove(getPage(pageNum));
-                    super.validate();
-                    super.repaint();
-                });
-
-                SwingUtilities.invokeLater(() -> {
-                    super.add(getPage(pageNum - 1));
-                    pageNum -= 1;
-                    super.validate();
-                    super.repaint();
-                });
-            }
+            previousPage();
         });
         menu.addSeparator();
         menu.add(previousPage);
@@ -146,33 +102,99 @@ public class StickyNote extends JFrame implements Serializable {
         menu.addSeparator();
         menu.add(closeBttn);
 
-        pageMap.put(0, temp);
-        super.add(temp);
-        super.validate(); // because adding component invalidates
+        return menu;
     }
 
-    private void updatePageMap(int linesPerPage, ArrayList<String> lines, Color textColour, Color backgroundColour,
-                               Font font) {
-        int maxFullPages = lines.size() / linesPerPage;
-        for (int i = 0; i < maxFullPages; i++) {
-            // separate the text into text for each page
-            ArrayList<String> textList = new ArrayList<>(lines.subList(i * linesPerPage, ((i + 1) * linesPerPage)));
-            pageMap.put(i, new StickyNoteBackground(textList, textColour, backgroundColour, font));
+    private void nextPage(boolean shouldCreate) {
+        if (shouldCreate) {
+            JTextArea newTextArea = createJTextArea();
+            textAreaDeck.add(newTextArea);
         }
-
-        // deal with remaining lines
-        if (lines.size() % linesPerPage > 0) {
-            ArrayList<String> textList = new ArrayList<>(lines.subList((maxFullPages * linesPerPage), lines.size()));
-            // since map is zero-indexed, the max full pages is 1 more than the actual amount of pages
-            pageMap.put(maxFullPages, new StickyNoteBackground(textList, textColour, backgroundColour, font));
-        }
+        CardLayout cl = (CardLayout) (textAreaDeck.getLayout());
+        cl.next(textAreaDeck);
     }
 
-    public StickyNoteBackground getPage(int page) {
-        return pageMap.get(page);
+    private void previousPage() {
+        CardLayout cl = (CardLayout) (textAreaDeck.getLayout());
+        cl.previous(textAreaDeck);
     }
 
-    public String getFullText() {
-        return text;
+    private void createGUI() {
+        final int PADDING = 20;
+
+        JLayeredPane textPane = new JLayeredPane();
+
+        textAreaDeck = new JPanel();
+        textAreaDeck.setLayout(new CardLayout());
+        textAreaDeck.setOpaque(false); // so the background is shown, since JPanel has background color
+        JTextArea textArea = createJTextArea();
+        textAreaDeck.add(textArea);
+        textAreaDeck.setBounds(new Rectangle(new Point(0, 0), textArea.getSize()));
+        textPane.add(textAreaDeck, Integer.valueOf(100));
+
+        FontMetrics fm = textArea.getFontMetrics(defaultFont);
+        Rectangle drawBounds = new Rectangle(0, 0, textArea.getWidth(), textArea.getHeight());
+        StickyNoteBackground background = new StickyNoteBackground(backgroundColour, ROWS, fm.getHeight(), drawBounds);
+        background.setBounds(new Rectangle(new Point(0, 0), textArea.getSize()));
+        textPane.add(background, Integer.valueOf(0));
+
+        GridBagConstraints textC = new GridBagConstraints();
+        textC.insets = new Insets(PADDING, PADDING, PADDING, PADDING);
+        textPane.setPreferredSize(textArea.getSize());
+        super.add(textPane, textC);
+        super.validate();
+        super.pack();
+    }
+
+    private JTextArea createJTextArea() {
+        JTextArea textArea = new JTextArea(ROWS, COLUMNS);
+        textArea.setBorder(new LineBorder(Color.black));
+        textArea.setFont(defaultFont);
+        textArea.setOpaque(false);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        textArea.setSize(textArea.getPreferredSize());
+        textArea.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                JPopupMenu menu = new JPopupMenu();
+
+                JMenuItem copyBttn = new JMenuItem("Copy");
+                copyBttn.addActionListener(ev -> {
+                    textArea.copy();
+                });
+                menu.add(copyBttn);
+
+                JMenuItem pasteBttn = new JMenuItem("Paste");
+                pasteBttn.addActionListener(ev -> {
+                    textArea.paste();
+                });
+                menu.addSeparator();
+                menu.add(pasteBttn);
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    menu.show(StickyNote.this, e.getX(), e.getY());
+                }
+            }
+        });
+
+        textArea.addCaretListener(e -> {
+            FontMetrics fm = textArea.getFontMetrics(defaultFont);
+            View mainView = textArea.getUI().getRootView(textArea);
+            int lineHeight = fm.getHeight();
+            int currentNumberOfLines = (int) mainView.getPreferredSpan(View.Y_AXIS) / lineHeight;
+            if (currentNumberOfLines > ROWS) {
+                nextPage(true);
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        //TODO: Fix wrapped line -> too many lines problem
+                        textArea.replaceRange("", textArea.getLineStartOffset(ROWS - 1), e.getDot());
+                    } catch (BadLocationException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                });
+            }
+        });
+
+        return textArea;
     }
 }
