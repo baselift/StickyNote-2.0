@@ -1,24 +1,21 @@
 package src;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.View;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.Serializable;
 
-public class StickyNote extends JFrame implements Serializable {
+public class StickyNote extends JFrame {
     private Color backgroundColour;
     private Color textColour;
     private final Font defaultFont = new Font("Arial", Font.PLAIN, 18);
     private int stickyNoteX;
     private int stickyNoteY;
-    private JPanel textAreaDeck = null;
-    private int pageNum = 0;
     private final int ROWS = 18;
     private final int COLUMNS = 28;
+    private int pageNum = 0;
+    private JScrollPane scrollTextPane;
+
 
     public StickyNote(Color textColour, Color backgroundColour) {
         super();
@@ -34,7 +31,7 @@ public class StickyNote extends JFrame implements Serializable {
 
         this.backgroundColour = backgroundColour;
         this.textColour = textColour;
-        createGUI();
+        this.createGUI();
     }
 
     private void setMouseListeners() {
@@ -81,20 +78,6 @@ public class StickyNote extends JFrame implements Serializable {
         });
         menu.add(settingsBttn);
 
-        JMenuItem nextPage = new JMenuItem("Next page");
-        nextPage.addActionListener(e -> {
-            nextPage(false);
-        });
-        menu.addSeparator();
-        menu.add(nextPage);
-
-        JMenuItem previousPage = new JMenuItem("Previous page");
-        previousPage.addActionListener(e -> {
-            previousPage();
-        });
-        menu.addSeparator();
-        menu.add(previousPage);
-
         JMenuItem closeBttn = new JMenuItem("Close");
         closeBttn.addActionListener(e -> {
             super.dispose();
@@ -105,42 +88,33 @@ public class StickyNote extends JFrame implements Serializable {
         return menu;
     }
 
-    private void nextPage(boolean shouldCreate) {
-        if (shouldCreate) {
-            JTextArea newTextArea = createJTextArea();
-            textAreaDeck.add(newTextArea);
-        }
-        CardLayout cl = (CardLayout) (textAreaDeck.getLayout());
-        cl.next(textAreaDeck);
-    }
-
-    private void previousPage() {
-        CardLayout cl = (CardLayout) (textAreaDeck.getLayout());
-        cl.previous(textAreaDeck);
-    }
-
     private void createGUI() {
-        final int PADDING = 20;
+        final int PADDING = 30;
 
         JLayeredPane textPane = new JLayeredPane();
 
-        textAreaDeck = new JPanel();
-        textAreaDeck.setLayout(new CardLayout());
-        textAreaDeck.setOpaque(false); // so the background is shown, since JPanel has background color
         JTextArea textArea = createJTextArea();
-        textAreaDeck.add(textArea);
-        textAreaDeck.setBounds(new Rectangle(new Point(0, 0), textArea.getSize()));
-        textPane.add(textAreaDeck, Integer.valueOf(100));
+        Dimension textAreaSize = textArea.getPreferredSize();
+        Rectangle textAreaRect = new Rectangle(new Point(0, 0), textAreaSize);
+
+        scrollTextPane = new JScrollPane(textArea);
+        // if we have borders, then scroll bars pop up by default
+        scrollTextPane.setBorder(null);
+        scrollTextPane.setOpaque(false);
+        scrollTextPane.getViewport().setOpaque(false);
+        // hide the scroll bar, but still maintain wheel scrolling
+        scrollTextPane.getVerticalScrollBar().setPreferredSize(new Dimension(0, 0));
+        scrollTextPane.setBounds(textAreaRect);
+        textPane.add(scrollTextPane, Integer.valueOf(100));
 
         FontMetrics fm = textArea.getFontMetrics(defaultFont);
-        Rectangle drawBounds = new Rectangle(0, 0, textArea.getWidth(), textArea.getHeight());
-        StickyNoteBackground background = new StickyNoteBackground(backgroundColour, ROWS, fm.getHeight(), drawBounds);
-        background.setBounds(new Rectangle(new Point(0, 0), textArea.getSize()));
+        StickyNoteBackground background = new StickyNoteBackground(backgroundColour, ROWS, fm.getHeight(), textAreaRect);
+        background.setBounds(textAreaRect);
         textPane.add(background, Integer.valueOf(0));
 
         GridBagConstraints textC = new GridBagConstraints();
         textC.insets = new Insets(PADDING, PADDING, PADDING, PADDING);
-        textPane.setPreferredSize(textArea.getSize());
+        textPane.setPreferredSize(textAreaSize);
         super.add(textPane, textC);
         super.validate();
         super.pack();
@@ -148,12 +122,13 @@ public class StickyNote extends JFrame implements Serializable {
 
     private JTextArea createJTextArea() {
         JTextArea textArea = new JTextArea(ROWS, COLUMNS);
-        textArea.setBorder(new LineBorder(Color.black));
+        //textArea.setBorder(new LineBorder(Color.black));
         textArea.setFont(defaultFont);
         textArea.setOpaque(false);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
-        textArea.setSize(textArea.getPreferredSize());
+        textArea.setForeground(textColour);
+        //textArea.setSize(textArea.getPreferredSize());
         textArea.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -171,27 +146,29 @@ public class StickyNote extends JFrame implements Serializable {
                 });
                 menu.addSeparator();
                 menu.add(pasteBttn);
+
+                JMenuItem scrollTop = new JMenuItem("Scroll to top");
+                scrollTop.addActionListener(ev -> {
+                    JViewport textViewport = scrollTextPane.getViewport();
+                    textViewport.setViewPosition(new Point(0, 0));
+                });
+                menu.addSeparator();
+                menu.add(scrollTop);
+
+                JMenuItem scrollBottom = new JMenuItem("Scroll to bottom");
+                scrollBottom.addActionListener(ev -> {
+                    JViewport textViewport = scrollTextPane.getViewport();
+                    Component textArea = textViewport.getView();
+                    Dimension textAreaSize = textArea.getPreferredSize();
+                    // translate view to its total height - total visible view height
+                    textViewport.setViewPosition(new Point(0, textAreaSize.height -
+                            textViewport.getExtentSize().height));
+                });
+                menu.addSeparator();
+                menu.add(scrollBottom);
                 if (SwingUtilities.isRightMouseButton(e)) {
                     menu.show(StickyNote.this, e.getX(), e.getY());
                 }
-            }
-        });
-
-        textArea.addCaretListener(e -> {
-            FontMetrics fm = textArea.getFontMetrics(defaultFont);
-            View mainView = textArea.getUI().getRootView(textArea);
-            int lineHeight = fm.getHeight();
-            int currentNumberOfLines = (int) mainView.getPreferredSpan(View.Y_AXIS) / lineHeight;
-            if (currentNumberOfLines > ROWS) {
-                nextPage(true);
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        //TODO: Fix wrapped line -> too many lines problem
-                        textArea.replaceRange("", textArea.getLineStartOffset(ROWS - 1), e.getDot());
-                    } catch (BadLocationException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                });
             }
         });
 

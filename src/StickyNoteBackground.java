@@ -22,12 +22,17 @@ public class StickyNoteBackground extends JPanel {
         g.setColor(backgroundColour);
         g.fillRect(getX(), getY(), getWidth(), getHeight());
 
-        g.setColor(Color.lightGray);
-        for (int i = 1; i < linesPerNote; i++) {
+        for (int i = 1; i < linesPerNote + 1; i++) {
+            g.setColor(Color.lightGray);
             int originX = (int) bounds.getX();
             int originY = (int) bounds.getY();
             int endX = originX + (int) bounds.getWidth();
-            g.drawLine(originX, originY + i*rowHeight, endX, originY + i*rowHeight);
+            if (i == linesPerNote) {
+                // cannot draw at component border, so can draw at offset of 1
+                g.drawLine(originX, originY + getHeight() - 1, endX, originY + getHeight() - 1);
+            } else {
+                g.drawLine(originX, originY + i*rowHeight, endX, originY + i*rowHeight);
+            }
         }
     }
 }
