@@ -1,7 +1,7 @@
 # StickyNote-2.0
 ## Description
 This was a personal project in Java that acts like a Sticky Note, so you can jot down daily plans, ideas etc... If anyone were to come across this and consider using it, note this was mostly made for me to use, so I am sorry if my app did not accommodate your needs.
-However, you could implement it for yourself.
+However, you could implement any missing features for yourself.
 
 ## What was version 1.0?
 I actually thought of this idea in 2022, and I made a similar version to this one. However, it was based on the user typing all their text at once (it could be edited later), then my program would draw the text on the screen. But the problem was that
