@@ -4,17 +4,27 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.Serial;
+import java.io.Serializable;
 
-public class StickyNote extends JFrame {
+/**
+ * Provides a implementation for a sticky note. Note that by default there is no physical scrollbar provided for scrolling
+ * through this sticky note's text, rather the user must use a scroll wheel in order to scroll through.
+ */
+public class StickyNote extends JFrame implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 8195518566344094545L;
     private Color backgroundColour;
     private Color textColour;
-    private final Font defaultFont = new Font("Arial", Font.PLAIN, 18);
+    private final Font DEFAULT_FONT = new Font("Arial", Font.PLAIN, 18);
     private int stickyNoteX;
     private int stickyNoteY;
+    private StickyNoteBackground background = null;
     private final int ROWS = 18;
     private final int COLUMNS = 28;
     private int pageNum = 0;
-    private JScrollPane scrollTextPane;
+    private JScrollPane scrollTextPane = null;
+    private boolean canDrag = true;
 
 
     public StickyNote(Color textColour, Color backgroundColour) {
@@ -34,6 +44,10 @@ public class StickyNote extends JFrame {
         this.createGUI();
     }
 
+    public StickyNote() {
+        this(Color.black, Color.yellow);
+    }
+
     private void setMouseListeners() {
         super.addMouseMotionListener(new MouseAdapter() {
             @Override
@@ -43,13 +57,14 @@ public class StickyNote extends JFrame {
                     // so to fix this we subtract the screen coords with cursor x and y so that the cursor still remains there
                     // since the top left point is dragged to coords - cursor coords.
 
-                    int newX = e.getXOnScreen() - stickyNoteX;
-                    int newY = e.getYOnScreen() - stickyNoteY;
-                    StickyNote.super.setLocation(newX, newY);
+                    if (StickyNote.this.canDrag) {
+                        int newX = e.getXOnScreen() - stickyNoteX;
+                        int newY = e.getYOnScreen() - stickyNoteY;
+                        StickyNote.super.setLocation(newX, newY);
+                    }
                 }
             }
         });
-
         super.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -77,6 +92,19 @@ public class StickyNote extends JFrame {
             note.setVisible(true);
         });
         menu.add(settingsBttn);
+
+        JMenuItem lockBttn = new JMenuItem(canDrag ? "Lock" : "Unlock");
+        lockBttn.addActionListener(e -> {
+            if (StickyNote.this.canDrag) { // if the note can be dragged
+                this.canDrag = false;
+                lockBttn.setText("Unlock");
+            } else { // if the note cannot be dragged
+                this.canDrag = true;
+                lockBttn.setText("Lock");
+            }
+        });
+        menu.addSeparator();
+        menu.add(lockBttn);
 
         JMenuItem closeBttn = new JMenuItem("Close");
         closeBttn.addActionListener(e -> {
@@ -107,8 +135,8 @@ public class StickyNote extends JFrame {
         scrollTextPane.setBounds(textAreaRect);
         textPane.add(scrollTextPane, Integer.valueOf(100));
 
-        FontMetrics fm = textArea.getFontMetrics(defaultFont);
-        StickyNoteBackground background = new StickyNoteBackground(backgroundColour, ROWS, fm.getHeight(), textAreaRect);
+        FontMetrics fm = textArea.getFontMetrics(DEFAULT_FONT);
+        background = new StickyNoteBackground(backgroundColour, ROWS, fm.getHeight(), textAreaRect);
         background.setBounds(textAreaRect);
         textPane.add(background, Integer.valueOf(0));
 
@@ -123,12 +151,11 @@ public class StickyNote extends JFrame {
     private JTextArea createJTextArea() {
         JTextArea textArea = new JTextArea(ROWS, COLUMNS);
         //textArea.setBorder(new LineBorder(Color.black));
-        textArea.setFont(defaultFont);
+        textArea.setFont(DEFAULT_FONT);
         textArea.setOpaque(false);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setForeground(textColour);
-        //textArea.setSize(textArea.getPreferredSize());
         textArea.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -173,5 +200,28 @@ public class StickyNote extends JFrame {
         });
 
         return textArea;
+    }
+    public void setTextColour(Color c) {
+        if (scrollTextPane != null) {
+            JViewport textViewport = scrollTextPane.getViewport();
+            Component textArea = textViewport.getView();
+            textArea.setForeground(c);
+        } else {
+            // this is an instance method, so this code should never be reached, but is for precaution purposes
+            throw new NullPointerException("textScrollPane field was not populated");
+        }
+    }
+    public void setBackgroundColour(Color c) {
+        if (background != null) {
+            super.getContentPane().setBackground(c);
+            background.setBackgroundColour(c);
+        } else {
+            // this is an instance method, so this should never be reached, but is for precaution purposes
+            throw new NullPointerException("background field was not populated");
+        }
+    }
+
+    public void setDragAbility(boolean canDrag) {
+        this.canDrag = canDrag;
     }
 }

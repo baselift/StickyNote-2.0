@@ -16,6 +16,11 @@ public class StickyNoteBackground extends JPanel {
         this.bounds = bounds;
     }
 
+    public void setBackgroundColour(Color c) {
+        this.backgroundColour = c;
+        super.repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);

@@ -5,11 +5,30 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+/**
+ * CreateNote is the lightweight component that provides a user interface for the creation of StickyNote.
+ * CreateNote instances are created for when the StickyNote is first created, or some of its properties want to be
+ * potentially edited.
+ *
+ * @see src.StickyNote
+ */
 public class CreateNote extends JDialog {
+    /**
+     * The component that is the reason that this instance of CreateNote exists. This can be null,
+     * or really any instance of Component. There is specific behaviour when source is an instance of StickyNote.
+     *
+     * @see src.StickyNote
+     */
     private Component source;
     private Color selectedColour = Color.black;
     private Color selectedBackgroundColour = Color.YELLOW;
+    private boolean keepScrollBar = false;
 
+    /**
+     * Creates a CreateNote instance with fixed size of 500 x 900. This constructor
+     * will automaticclly create the GUI.
+     * @param source the component that caused this createNote instance to be created.
+     */
     public CreateNote(Component source) {
         // (Dialog) null is to make JDialog appear in taskbar
         super((Dialog) null);
@@ -34,20 +53,25 @@ public class CreateNote extends JDialog {
         createGUI();
     }
 
+    /**
+     * Private method which creates the GUI for this CreateNote instance.
+     */
     private void createGUI() {
         final int VERTICAL_PADDING = 30;
 
         JPanel colourSettingsPanel = new JPanel();
-        colourSettingsPanel.setLayout(new FlowLayout(FlowLayout.LEADING, 36, 0));
+        colourSettingsPanel.setLayout(new FlowLayout(FlowLayout.LEADING, 20, 0));
         GridBagConstraints colourSettingsC = new GridBagConstraints();
         colourSettingsC.gridx = 0;
         colourSettingsC.gridy = 1;
-        colourSettingsC.insets = new Insets(VERTICAL_PADDING, 0, VERTICAL_PADDING, 50);
+        colourSettingsC.anchor = GridBagConstraints.FIRST_LINE_START;
+        colourSettingsC.insets = new Insets(VERTICAL_PADDING, 0, 0, 0);
+        colourSettingsC.weighty = 0.001;
         // colour sub-heading
         JLabel colourLbl = new JLabel("<html>Text<br>Colour:</html>");
         colourLbl.setFont(new Font("Arial", Font.BOLD, 16));
         // the line that will display user-chosen colour
-        ColouredLine line = new ColouredLine(Color.black, 0, 0, 100, 0, 3F);
+        ColouredLine line = new ColouredLine(Color.black, 3F);
         // the "choose colour" button
         JButton chooseColour = new JButton("Select Colour");
         chooseColour.setFocusable(false);
@@ -68,17 +92,16 @@ public class CreateNote extends JDialog {
         GridBagConstraints backgroundSettingsC = new GridBagConstraints();
         backgroundSettingsC.gridx = 0;
         backgroundSettingsC.gridy = 2;
-        backgroundSettingsC.insets = new Insets(0, 0, 0, 50);
         // try changing weights if it seems to take up more space
         backgroundSettingsC.weighty = 0.01;
-        backgroundSettingsC.anchor = GridBagConstraints.PAGE_START;
+        backgroundSettingsC.anchor = GridBagConstraints.FIRST_LINE_START;
 
         // "Background Image" sub-heading
         JLabel backgroundImgLbl = new JLabel("<html>Background<br>Colour:</html> ");
         backgroundImgLbl.setFont(new Font("Arial", Font.BOLD, 16));
 
         // choose background button
-        ColouredLine bgLine = new ColouredLine(Color.YELLOW, 0, 0, 100, 0, 3F);
+        ColouredLine bgLine = new ColouredLine(Color.YELLOW, 3F);
         JButton chooseBackgroundColour = new JButton("Select Colour");
         chooseBackgroundColour.setFocusable(false);
         chooseBackgroundColour.addActionListener(e -> {
@@ -104,14 +127,18 @@ public class CreateNote extends JDialog {
         confirmBttn.setFocusable(false);
         confirmBttn.addActionListener(e -> {
             if (e.getSource() == confirmBttn) {
-                if (this.source instanceof StickyNote) {
-                    ((StickyNote) this.source).dispose();
-                }
-                SwingUtilities.invokeLater(() -> {
+                if (source instanceof StickyNote) {
+                    SwingUtilities.invokeLater(() -> {
+                        ((StickyNote) source).setBackgroundColour(selectedBackgroundColour);
+                        ((StickyNote) source).setTextColour(selectedColour);
+                        source.revalidate();
+                        source.repaint();
+                    });
+                } else {
                     StickyNote note = new StickyNote(selectedColour, selectedBackgroundColour);
                     note.setVisible(true);
-                    close();
-                });
+                }
+                close();
             }
         });
         JButton cancelBttn = new JButton("Cancel");
