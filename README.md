@@ -23,4 +23,4 @@ Lower Priority:
 
 ## Reflection
 There were various choices that were made, and the final result was the probably the simplest version. Features like scroll bar is not high priority because for me I do not need the scroll bar, although if it was made for a different audience, it could be more important.
-I would be open to improvements and suggestions regarding optimizations, bugs and feature requests (although it is not guaranteed that I will actually act on them, I highly recommended to fork this repo if you want to add new features).
+I would be open to improvements and suggestions regarding optimizations, bugs and feature requests (although it is not guaranteed that I will actually act on them, I highly recommended to fork this repo if you want to add new features or make major changes).
