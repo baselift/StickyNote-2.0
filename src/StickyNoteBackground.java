@@ -5,6 +5,7 @@ import java.awt.*;
 
 public class StickyNoteBackground extends JPanel {
     private Color backgroundColour;
+    private final Color lineColour = Color.lightGray;
     private int linesPerNote;
     private int rowHeight;
     private Rectangle bounds;
@@ -14,6 +15,8 @@ public class StickyNoteBackground extends JPanel {
         this.linesPerNote = linesPerNote;
         this.rowHeight = rowHeight;
         this.bounds = bounds;
+
+        super.setBorder(BorderFactory.createLineBorder(lineColour));
     }
 
     public void setBackgroundColour(Color c) {
@@ -28,7 +31,7 @@ public class StickyNoteBackground extends JPanel {
         g.fillRect(getX(), getY(), getWidth(), getHeight());
 
         for (int i = 1; i < linesPerNote + 1; i++) {
-            g.setColor(Color.lightGray);
+            g.setColor(lineColour);
             int originX = (int) bounds.getX();
             int originY = (int) bounds.getY();
             int endX = originX + (int) bounds.getWidth();

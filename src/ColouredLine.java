@@ -18,7 +18,7 @@ public class ColouredLine extends JComponent {
      * Constructs a line with a default color of black (Color.black), and default size (x1, y1, x2, y2) = (0, 0, 100, 0).
      */
     public ColouredLine() {
-        this.colour = Color.black;
+        this.colour = Color.BLACK;
         calcAndSetPreferredSize();
     }
 
