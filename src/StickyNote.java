@@ -4,10 +4,7 @@ import src.actions.SaveAction;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 
 /**
  * Provides a implementation for a sticky note. Note that by default there is no physical scrollbar provided for scrolling
@@ -15,7 +12,12 @@ import java.awt.event.WindowEvent;
  * of all StickyNotes is Arial Size 18 that cannot be changed (for now). The sticky note has a default size that also
  * cannot be changed. The sticky note is by default draggable.
  */
-public class StickyNote extends StickyNoteGUI {
+public class StickyNote implements SettingsPopupMenu {
+    protected JFrame mainFrame;
+    protected StickyNoteBackground background;
+    protected JTextArea textArea;
+    private Color backgroundColour;
+    private Color textColour;
     private int lastLocationX;
     private int lastLocationY;
     private boolean canDrag;
@@ -32,54 +34,53 @@ public class StickyNote extends StickyNoteGUI {
     }
 
     public StickyNote(Color textColour, Color backgroundColour, int lastLocationX, int lastLocationY, boolean canDrag) {
-        super(backgroundColour, textColour);
-        super.mainFrame.setLocation(lastLocationX, lastLocationY);
+        mainFrame = new JFrame();
+        mainFrame.setLocation(lastLocationX, lastLocationY);
+        mainFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        mainFrame.setUndecorated(true);
+        mainFrame.setLayout(new GridBagLayout());
+        mainFrame.getContentPane().setBackground(backgroundColour);
+        Image icon = CommonUtils.getScaledIcon("./images/stickynoteicon1.png",
+                30, 30, Image.SCALE_SMOOTH);
+        mainFrame.setIconImage(icon);
+
+        this.backgroundColour = backgroundColour;
+        this.textColour = textColour;
         this.lastLocationX = lastLocationX;
         this.lastLocationY = lastLocationY;
         this.canDrag = canDrag;
         this.createGUI();
     }
 
-    private JPopupMenu createSettingPopup() {
-        JPopupMenu menu = new JPopupMenu();
-
-        JMenuItem settingsBttn = new JMenuItem("Settings");
-        settingsBttn.addActionListener(e -> {
-            mainFrame.setEnabled(false);
-            CreateNote note = new CreateNote(this);
-            note.addWindowListener(new WindowAdapter() {
-                @Override
-                public void windowClosed(WindowEvent e) {
-                    super.windowClosed(e);
-                    mainFrame.setEnabled(true);
-                }
-            });
-            note.setIcon(new ImageIcon("./images/settings icon.png"));
-            note.setVisible(true);
-        });
-        menu.add(settingsBttn);
-
-        JMenuItem lockBttn = new JMenuItem(canDrag ? "Lock" : "Unlock");
-        lockBttn.addActionListener(e -> {
-            if (StickyNote.this.canDrag) { // if the note can be dragged
-                this.canDrag = false;
-                lockBttn.setText("Unlock");
-            } else { // if the note cannot be dragged
-                this.canDrag = true;
-                lockBttn.setText("Lock");
+    @Override
+    public void onSettingsButtonClicked(ActionEvent e, JMenuItem settingsButton) {
+        mainFrame.setEnabled(false);
+        CreateNote note = new CreateNote(this);
+        note.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                super.windowClosed(e);
+                mainFrame.setEnabled(true);
             }
         });
-        menu.addSeparator();
-        menu.add(lockBttn);
+        note.setIcon(new ImageIcon("./images/settings icon.png"));
+        note.setVisible(true);
+    }
 
-        JMenuItem closeBttn = new JMenuItem("Close");
-        closeBttn.addActionListener(e -> {
-            mainFrame.dispose();
-        });
-        menu.addSeparator();
-        menu.add(closeBttn);
+    @Override
+    public void onLockButtonClicked(ActionEvent e, JMenuItem lockBttn) {
+        if (StickyNote.this.canDrag) { // if the note can be dragged
+            this.canDrag = false;
+            lockBttn.setText("Unlock");
+        } else { // if the note cannot be dragged
+            this.canDrag = true;
+            lockBttn.setText("Lock");
+        }
+    }
 
-        return menu;
+    @Override
+    public void onCloseButtonClicked(ActionEvent e, JMenuItem closeButton) {
+        mainFrame.dispose();
     }
 
     private JTextArea createNoteTextArea(JViewport textViewport) {
@@ -151,7 +152,7 @@ public class StickyNote extends StickyNoteGUI {
                 super.mousePressed(e);
                 if (SwingUtilities.isRightMouseButton(e)) {
                     SwingUtilities.invokeLater(() -> {
-                        createSettingPopup().show(mainFrame, e.getX(), e.getY());
+                        createSettingsPopup(canDrag).show(mainFrame, e.getX(), e.getY());
                     });
 
                 } else if (SwingUtilities.isLeftMouseButton(e)) {
@@ -164,10 +165,11 @@ public class StickyNote extends StickyNoteGUI {
             @Override
             public void mouseReleased(MouseEvent e) {
                 super.mouseReleased(e);
-                lastLocationX = e.getX();
-                lastLocationY = e.getY();
+                lastLocationX = mainFrame.getLocation().x;
+                lastLocationY = mainFrame.getLocation().y;
             }
         });
+
         toolBar.setBackground(CommonUtils.getScaledColour(backgroundColour, 0.9));
         toolBar.setBorder(null);
         toolBar.setFloatable(false);
