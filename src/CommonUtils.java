@@ -36,7 +36,7 @@ public class CommonUtils {
                 c.getAlpha());
     }
 
-    public static void createToolbarButton(JToolBar tb, Action action) {
+    public static void addToolbarAction(JToolBar tb, Action action) {
         JButton bttn = tb.add(action);
         bttn.setBorder(null);
         bttn.setOpaque(false);

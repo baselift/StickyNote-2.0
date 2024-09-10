@@ -1,4 +1,4 @@
-package src;
+package src.components;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,6 +17,10 @@ public class StickyNoteBackground extends JPanel {
         this.bounds = bounds;
 
         super.setBorder(BorderFactory.createLineBorder(lineColour));
+    }
+
+    public Color getBackgroundColour() {
+        return backgroundColour;
     }
 
     public void setBackgroundColour(Color c) {

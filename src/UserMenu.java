@@ -43,7 +43,7 @@ public class UserMenu extends JFrame {
             if (e.getSource() == addNoteBttn) {
                 SwingUtilities.invokeLater(() -> {
                     addNoteBttn.setEnabled(false);
-                    CreateNote creator = new CreateNote(addNoteBttn);
+                    CreateNote creator = new CreateNote();
                     creator.setVisible(true);
                     creator.addWindowListener(new WindowAdapter() {
                         @Override
